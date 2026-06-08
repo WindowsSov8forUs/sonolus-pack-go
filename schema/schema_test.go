@@ -342,6 +342,25 @@ func TestParseMissingFileReportsDoesNotExist(t *testing.T) {
 	}
 }
 
+func TestParseReadErrorUsesSlashNormalizedPath(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "item.json")
+	if err := os.Mkdir(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := schema.ParsePostItem(path)
+	if err == nil {
+		t.Fatal("expected read error")
+	}
+	want := filepath.ToSlash(path)
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if strings.Contains(err.Error(), `\`) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func TestParseRejectsTopLevelNonObjectsAsValidationErrors(t *testing.T) {
 	tests := []string{
 		`[]`,

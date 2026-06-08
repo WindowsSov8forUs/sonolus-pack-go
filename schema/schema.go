@@ -2,6 +2,7 @@ package schema
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -98,7 +99,7 @@ func parse(path string, out any, allowed, required []string, version int) error 
 		if os.IsNotExist(err) {
 			return fmt.Errorf("%s: Does not exist", displayPath(path))
 		}
-		return err
+		return fileError(path, err)
 	}
 
 	if err := validateTopLevelObject(path, data); err != nil {
@@ -196,6 +197,14 @@ func newValidationError(path, jsonPath, message string, value json.RawMessage) V
 
 func displayPath(path string) string {
 	return filepath.ToSlash(path)
+}
+
+func fileError(path string, err error) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Errorf("%s: %s: %s", displayPath(path), pathErr.Op, pathErr.Err)
+	}
+	return fmt.Errorf("%s: %w", displayPath(path), err)
 }
 
 func validateVersion(path string, fields map[string]json.RawMessage, version int) *ValidationError {
