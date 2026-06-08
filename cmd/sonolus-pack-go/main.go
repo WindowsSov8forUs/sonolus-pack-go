@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/WindowsSov8forUs/sonolus-pack-go/pack"
+	"github.com/WindowsSov8forUs/sonolus-pack-go/packer"
 	"github.com/WindowsSov8forUs/sonolus-pack-go/schema"
 )
 
@@ -63,7 +63,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout, "[INFO]", "Packing:", options.input)
 	fmt.Fprintln(stdout)
 
-	if err := pack.Pack(context.Background(), pack.Options{
+	if err := packer.Pack(context.Background(), packer.Options{
 		Input:  options.input,
 		Output: options.output,
 		Logger: logger{w: stdout},

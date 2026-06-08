@@ -63,11 +63,11 @@ package main
 import (
 	"context"
 
-	"github.com/WindowsSov8forUs/sonolus-pack-go/pack"
+	"github.com/WindowsSov8forUs/sonolus-pack-go/packer"
 )
 
 func main() {
-	err := pack.Pack(context.Background(), pack.Options{
+	err := packer.Pack(context.Background(), packer.Options{
 		Input:  "source",
 		Output: "pack",
 	})
