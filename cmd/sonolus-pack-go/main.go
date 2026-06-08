@@ -68,9 +68,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 		Output: options.output,
 		Logger: logger{w: stdout},
 	}); err != nil {
+		var validationErrs *schema.ValidationErrors
 		var validationErr *schema.ValidationError
 		fmt.Fprintln(stdout)
-		if errors.As(err, &validationErr) {
+		if errors.As(err, &validationErrs) {
+			for _, item := range validationErrs.Items {
+				fmt.Fprintln(stderr, "[ERROR]", item.Path+":", item.Message)
+			}
+		} else if errors.As(err, &validationErr) {
 			fmt.Fprintln(stderr, "[ERROR]", validationErr.Path+":", validationErr.Message)
 		}
 		fmt.Fprintln(stderr, "[FAILED]", err)

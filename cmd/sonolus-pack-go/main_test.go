@@ -87,7 +87,7 @@ func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 	if err := os.MkdirAll(source, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "info.json"), []byte(`{"title":{"en":1}}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "info.json"), []byte(`{"title":{"en":1},"description":{"en":false}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -109,6 +109,9 @@ func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 	}
 	if errorIndex > failedIndex {
 		t.Fatalf("stderr = %q; want [ERROR] before [FAILED]", got)
+	}
+	if bytes.Count([]byte(got), []byte("[ERROR]")) < 2 {
+		t.Fatalf("stderr = %q; want multiple [ERROR] lines", got)
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("output should be removed, stat err: %v", err)

@@ -298,7 +298,7 @@ type PostItem struct {
 
 必填字段：`version`、`title`、`time`、`author`、`tags`。
 
-`version` 必须为 `1`。
+`version` 按 JSON number literal 校验，`1` 与 `1.0` 等价；字符串、布尔值和 `null` 不接受。
 
 #### `thumbnail[.png/.srl]`
 
@@ -352,7 +352,7 @@ type PlaylistItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`、`levels`。
 
-`version` 必须为 `1`。`levels` 中的每个名称都必须能在 `levels/` 中找到。
+`version` 按 JSON number literal 校验，`1` 与 `1.0` 等价；字符串、布尔值和 `null` 不接受。`levels` 中的每个名称都必须能在 `levels/` 中找到。
 
 #### `thumbnail[.png/.srl]`
 
@@ -426,7 +426,7 @@ type DatabaseUseItem struct {
 
 必填字段：`version`、`rating`、`title`、`artists`、`author`、`tags`、`engine`、`useSkin`、`useBackground`、`useEffect`、`useParticle`。
 
-`version` 必须为 `1`。`engine` 必须能在 `engines/` 中找到。
+`version` 按 JSON number literal 校验，`1` 与 `1.0` 等价；字符串、布尔值和 `null` 不接受。`engine` 必须能在 `engines/` 中找到。
 
 `useSkin`、`useBackground`、`useEffect`、`useParticle` 可以使用默认资源：
 
@@ -509,7 +509,7 @@ type SkinItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`。
 
-`version` 必须为 `4`。
+`version` 按 JSON number literal 校验，`4` 与 `4.0` 等价；字符串、布尔值和 `null` 不接受。
 
 #### `thumbnail[.png/.srl]`
 
@@ -569,7 +569,7 @@ type BackgroundItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`。
 
-`version` 必须为 `2`。
+`version` 按 JSON number literal 校验，`2` 与 `2.0` 等价；字符串、布尔值和 `null` 不接受。
 
 #### `thumbnail[.png/.srl]`
 
@@ -633,7 +633,7 @@ type EffectItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`。
 
-`version` 必须为 `5`。
+`version` 按 JSON number literal 校验，`5` 与 `5.0` 等价；字符串、布尔值和 `null` 不接受。
 
 #### `thumbnail[.png/.srl]`
 
@@ -693,7 +693,7 @@ type ParticleItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`。
 
-`version` 必须为 `3`。
+`version` 按 JSON number literal 校验，`3` 与 `3.0` 等价；字符串、布尔值和 `null` 不接受。
 
 #### `thumbnail[.png/.srl]`
 
@@ -761,7 +761,7 @@ type EngineItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`、`skin`、`background`、`effect`、`particle`。
 
-`version` 必须为 `13`。`skin`、`background`、`effect`、`particle` 必须能在对应目录中找到。
+`version` 按 JSON number literal 校验，`13` 与 `13.0` 等价；字符串、布尔值和 `null` 不接受。`skin`、`background`、`effect`、`particle` 必须能在对应目录中找到。
 
 #### `thumbnail[.png/.srl]`
 
@@ -839,7 +839,7 @@ type ReplayItem struct {
 
 必填字段：`version`、`title`、`subtitle`、`author`、`tags`、`level`。
 
-`version` 必须为 `1`。`level` 必须能在 `levels/` 中找到。
+`version` 按 JSON number literal 校验，`1` 与 `1.0` 等价；字符串、布尔值和 `null` 不接受。`level` 必须能在 `levels/` 中找到。
 
 #### `data[.json/.srl]`
 
@@ -862,4 +862,4 @@ pack/
 
 `repository/` 包含处理后的资源。`db.json` 包含打包后的 Sonolus 数据库。
 
-打包开始前会清空输出目录；如果打包失败，输出目录会被删除并返回非 0 退出码，避免留下不完整结果。
+打包开始前会清空输出目录；如果打包失败，schema validation 可能输出多条 `[ERROR]`，随后输出 `[FAILED]`，输出目录会被删除并返回非 0 退出码，避免留下不完整结果。

@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -150,6 +151,49 @@ func TestParseLevelItemCleansUseDefaultTrueItem(t *testing.T) {
 	}
 }
 
+func TestParseCleansNestedUnknownFields(t *testing.T) {
+	levelPath := writeTemp(t, `{
+		"version": 1,
+		"rating": 1,
+		"title": { "en": "Title" },
+		"artists": { "en": "Artist" },
+		"author": { "en": "Author" },
+		"tags": [{ "title": { "en": "Tag" }, "icon": "tag", "extra": "drop" }],
+		"engine": "engine",
+		"useSkin": { "useDefault": true, "item": "skin", "extra": "drop" },
+		"useBackground": { "useDefault": true },
+		"useEffect": { "useDefault": true },
+		"useParticle": { "useDefault": true }
+	}`)
+	level, err := schema.ParseLevelItem(levelPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	levelData, err := json.Marshal(level)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(levelData), "extra") {
+		t.Fatalf("nested extra field was not cleaned: %s", levelData)
+	}
+	if strings.Contains(string(levelData), `"item":"skin"`) {
+		t.Fatalf("useDefault true item was not cleaned: %s", levelData)
+	}
+
+	srlPath := writeTemp(t, `{"hash":"hash","url":"url","extra":"drop"}`)
+	srl, err := schema.ParseSrl(srlPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srlData, err := json.Marshal(srl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(srlData), "extra") {
+		t.Fatalf("srl extra field was not cleaned: %s", srlData)
+	}
+}
+
 func TestParseRejectsInvalidNumberFields(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -199,6 +243,28 @@ func TestParseRejectsInvalidNumberFields(t *testing.T) {
 	}
 }
 
+func TestParseReturnsMultipleValidationErrors(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": "1",
+		"title": { "en": 1 },
+		"time": "1",
+		"author": { "en": "Author" },
+		"tags": []
+	}`)
+
+	_, err := schema.ParsePostItem(path)
+	if err == nil {
+		t.Fatal("expected validation errors")
+	}
+	var validationErrs *schema.ValidationErrors
+	if !errors.As(err, &validationErrs) {
+		t.Fatalf("error = %T %v; want ValidationErrors", err, err)
+	}
+	if len(validationErrs.Items) < 3 {
+		t.Fatalf("validation error count = %d; want at least 3", len(validationErrs.Items))
+	}
+}
+
 func TestParseMissingFileReportsDoesNotExist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "item.json")
 
@@ -208,6 +274,29 @@ func TestParseMissingFileReportsDoesNotExist(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Does not exist") {
 		t.Fatalf("error = %q; want Does not exist", err.Error())
+	}
+}
+
+func TestParseRejectsTopLevelNonObjectsAsValidationErrors(t *testing.T) {
+	tests := []string{
+		`[]`,
+		`"bad"`,
+		`1`,
+		`true`,
+		`null`,
+	}
+
+	for _, content := range tests {
+		t.Run(content, func(t *testing.T) {
+			_, err := schema.ParsePostItem(writeTemp(t, content))
+			if err == nil {
+				t.Fatal("expected validation error")
+			}
+			var validationErrs *schema.ValidationErrors
+			if !errors.As(err, &validationErrs) {
+				t.Fatalf("error = %T %v; want ValidationErrors", err, err)
+			}
+		})
 	}
 }
 

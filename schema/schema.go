@@ -21,6 +21,15 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid data: %s", e.Path)
 }
 
+type ValidationErrors struct {
+	Path  string
+	Items []ValidationError
+}
+
+func (e *ValidationErrors) Error() string {
+	return fmt.Sprintf("Invalid data: %s", e.Path)
+}
+
 func ParseInfo(path string) (model.ServerInfo, error) {
 	var item model.ServerInfo
 	if err := parse(path, &item, []string{"title"}, 0); err != nil {
@@ -91,29 +100,34 @@ func parse(path string, out any, required []string, version int) error {
 		return err
 	}
 
+	if err := validateTopLevelObject(path, data); err != nil {
+		return err
+	}
+
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	if fields == nil {
-		return newValidationError(path, "", "must be an object", data)
-	}
+
+	var validationErrors []ValidationError
 	for _, key := range required {
 		raw, ok := fields[key]
 		if !ok {
-			return newValidationError(path, "/"+key, key+" is required", nil)
+			validationErrors = append(validationErrors, newValidationError(path, "/"+key, key+" is required", nil))
+			continue
 		}
 		if len(raw) == 0 {
-			return newValidationError(path, "/"+key, key+" is required", raw)
+			validationErrors = append(validationErrors, newValidationError(path, "/"+key, key+" is required", raw))
 		}
 	}
 	if version != 0 {
-		if err := validateVersion(path, fields, version); err != nil {
-			return err
+		if validationErr := validateVersion(path, fields, version); validationErr != nil {
+			validationErrors = append(validationErrors, *validationErr)
 		}
 	}
-	if err := validateFields(path, fields); err != nil {
-		return err
+	validationErrors = append(validationErrors, validateFields(path, fields)...)
+	if len(validationErrors) != 0 {
+		return &ValidationErrors{Path: path, Items: validationErrors}
 	}
 
 	if data, err = json.Marshal(fields); err != nil {
@@ -125,7 +139,20 @@ func parse(path string, out any, required []string, version int) error {
 	return nil
 }
 
-func validateFields(path string, fields map[string]json.RawMessage) error {
+func validateTopLevelObject(path string, data []byte) error {
+	var value any
+	if err := json.Unmarshal(data, &value); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	if _, ok := value.(map[string]any); !ok {
+		validationErr := newValidationError(path, "", "must be an object", data)
+		return &ValidationErrors{Path: path, Items: []ValidationError{validationErr}}
+	}
+	return nil
+}
+
+func validateFields(path string, fields map[string]json.RawMessage) []ValidationError {
+	var errors []ValidationError
 	for key, raw := range fields {
 		var err error
 		switch key {
@@ -145,14 +172,14 @@ func validateFields(path string, fields map[string]json.RawMessage) error {
 			err = validateNumber(raw)
 		}
 		if err != nil {
-			return newValidationError(path, "/"+key, fmt.Sprintf("%s: %s", key, err), raw)
+			errors = append(errors, newValidationError(path, "/"+key, fmt.Sprintf("%s: %s", key, err), raw))
 		}
 	}
-	return nil
+	return errors
 }
 
-func newValidationError(path, jsonPath, message string, value json.RawMessage) error {
-	return &ValidationError{
+func newValidationError(path, jsonPath, message string, value json.RawMessage) ValidationError {
+	return ValidationError{
 		Path:     path,
 		JSONPath: jsonPath,
 		Message:  message,
@@ -160,17 +187,20 @@ func newValidationError(path, jsonPath, message string, value json.RawMessage) e
 	}
 }
 
-func validateVersion(path string, fields map[string]json.RawMessage, version int) error {
+func validateVersion(path string, fields map[string]json.RawMessage, version int) *ValidationError {
 	raw := fields["version"]
 	if string(raw) == "null" {
-		return newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+		validationErr := newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+		return &validationErr
 	}
 	var got float64
 	if err := json.Unmarshal(raw, &got); err != nil {
-		return newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+		validationErr := newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+		return &validationErr
 	}
 	if got != float64(version) {
-		return newValidationError(path, "/version", fmt.Sprintf("version must be %d, got %s", version, string(raw)), raw)
+		validationErr := newValidationError(path, "/version", fmt.Sprintf("version must be %d, got %s", version, string(raw)), raw)
+		return &validationErr
 	}
 	fields["version"] = json.RawMessage(strconv.Itoa(version))
 	return nil
