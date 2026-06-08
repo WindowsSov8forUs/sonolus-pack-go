@@ -158,6 +158,56 @@ func TestPackPreservesPresentEmptyDescription(t *testing.T) {
 	}
 }
 
+func TestPackPreservesPresentEmptyTagFields(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	createMinimalSource(t, source)
+	writeItem(t, source, "posts", "post", `{"version":1,"title":{"en":"Post"},"time":1,"author":{"en":"Author"},"tags":[{"title":{},"icon":""},{}]}`)
+
+	if err := packer.Pack(context.Background(), packer.Options{
+		Input:  source,
+		Output: output,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(output, "db.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var db map[string]json.RawMessage
+	if err := json.Unmarshal(data, &db); err != nil {
+		t.Fatal(err)
+	}
+	var posts []map[string]json.RawMessage
+	if err := json.Unmarshal(db["posts"], &posts); err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 1 {
+		t.Fatalf("posts length = %d; want 1 in %s", len(posts), data)
+	}
+	var tags []map[string]json.RawMessage
+	if err := json.Unmarshal(posts[0]["tags"], &tags); err != nil {
+		t.Fatal(err)
+	}
+	if len(tags) != 2 {
+		t.Fatalf("tags length = %d; want 2 in %s", len(tags), data)
+	}
+	if got := string(tags[0]["title"]); got != "{}" {
+		t.Fatalf("tag title = %s; want {} in %s", got, data)
+	}
+	if got := string(tags[0]["icon"]); got != `""` {
+		t.Fatalf("tag icon = %s; want empty string in %s", got, data)
+	}
+	if _, ok := tags[1]["title"]; ok {
+		t.Fatalf("missing tag title was output: %s", data)
+	}
+	if _, ok := tags[1]["icon"]; ok {
+		t.Fatalf("missing tag icon was output: %s", data)
+	}
+}
+
 func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")

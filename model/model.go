@@ -32,6 +32,11 @@ type DatabaseUseItem struct {
 	Item       string `json:"item,omitempty"`
 }
 
+type DatabaseTag struct {
+	Title *database.LocalizationText `json:"title,omitempty"`
+	Icon  *core.Icon                 `json:"icon,omitempty"`
+}
+
 func (u *DatabaseUseItem) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		UseDefault *bool   `json:"useDefault"`
@@ -60,7 +65,7 @@ type PostItem struct {
 	Title       database.LocalizationText  `json:"title"`
 	Time        float64                    `json:"time"`
 	Author      database.LocalizationText  `json:"author"`
-	Tags        []database.DatabaseTag     `json:"tags"`
+	Tags        []DatabaseTag              `json:"tags"`
 	Description *database.LocalizationText `json:"description,omitempty"`
 	Meta        json.RawMessage            `json:"meta,omitempty"`
 	Thumbnail   *core.Srl                  `json:"thumbnail,omitempty"`
@@ -72,7 +77,7 @@ type PlaylistItem struct {
 	Title       database.LocalizationText  `json:"title"`
 	Subtitle    database.LocalizationText  `json:"subtitle"`
 	Author      database.LocalizationText  `json:"author"`
-	Tags        []database.DatabaseTag     `json:"tags"`
+	Tags        []DatabaseTag              `json:"tags"`
 	Description *database.LocalizationText `json:"description,omitempty"`
 	Levels      []string                   `json:"levels"`
 	Meta        json.RawMessage            `json:"meta,omitempty"`
@@ -86,7 +91,7 @@ type LevelItem struct {
 	Title         database.LocalizationText  `json:"title"`
 	Artists       database.LocalizationText  `json:"artists"`
 	Author        database.LocalizationText  `json:"author"`
-	Tags          []database.DatabaseTag     `json:"tags"`
+	Tags          []DatabaseTag              `json:"tags"`
 	Description   *database.LocalizationText `json:"description,omitempty"`
 	Engine        string                     `json:"engine"`
 	UseSkin       DatabaseUseItem            `json:"useSkin"`
@@ -106,7 +111,7 @@ type SkinItem struct {
 	Title       database.LocalizationText  `json:"title"`
 	Subtitle    database.LocalizationText  `json:"subtitle"`
 	Author      database.LocalizationText  `json:"author"`
-	Tags        []database.DatabaseTag     `json:"tags"`
+	Tags        []DatabaseTag              `json:"tags"`
 	Description *database.LocalizationText `json:"description,omitempty"`
 	Meta        json.RawMessage            `json:"meta,omitempty"`
 	Thumbnail   core.Srl                   `json:"thumbnail"`
@@ -120,7 +125,7 @@ type BackgroundItem struct {
 	Title         database.LocalizationText  `json:"title"`
 	Subtitle      database.LocalizationText  `json:"subtitle"`
 	Author        database.LocalizationText  `json:"author"`
-	Tags          []database.DatabaseTag     `json:"tags"`
+	Tags          []DatabaseTag              `json:"tags"`
 	Description   *database.LocalizationText `json:"description,omitempty"`
 	Meta          json.RawMessage            `json:"meta,omitempty"`
 	Thumbnail     core.Srl                   `json:"thumbnail"`
@@ -135,7 +140,7 @@ type EffectItem struct {
 	Title       database.LocalizationText  `json:"title"`
 	Subtitle    database.LocalizationText  `json:"subtitle"`
 	Author      database.LocalizationText  `json:"author"`
-	Tags        []database.DatabaseTag     `json:"tags"`
+	Tags        []DatabaseTag              `json:"tags"`
 	Description *database.LocalizationText `json:"description,omitempty"`
 	Meta        json.RawMessage            `json:"meta,omitempty"`
 	Thumbnail   core.Srl                   `json:"thumbnail"`
@@ -149,7 +154,7 @@ type ParticleItem struct {
 	Title       database.LocalizationText  `json:"title"`
 	Subtitle    database.LocalizationText  `json:"subtitle"`
 	Author      database.LocalizationText  `json:"author"`
-	Tags        []database.DatabaseTag     `json:"tags"`
+	Tags        []DatabaseTag              `json:"tags"`
 	Description *database.LocalizationText `json:"description,omitempty"`
 	Meta        json.RawMessage            `json:"meta,omitempty"`
 	Thumbnail   core.Srl                   `json:"thumbnail"`
@@ -163,7 +168,7 @@ type EngineItem struct {
 	Title         database.LocalizationText  `json:"title"`
 	Subtitle      database.LocalizationText  `json:"subtitle"`
 	Author        database.LocalizationText  `json:"author"`
-	Tags          []database.DatabaseTag     `json:"tags"`
+	Tags          []DatabaseTag              `json:"tags"`
 	Description   *database.LocalizationText `json:"description,omitempty"`
 	Skin          string                     `json:"skin"`
 	Background    string                     `json:"background"`
@@ -185,7 +190,7 @@ type ReplayItem struct {
 	Title         database.LocalizationText  `json:"title"`
 	Subtitle      database.LocalizationText  `json:"subtitle"`
 	Author        database.LocalizationText  `json:"author"`
-	Tags          []database.DatabaseTag     `json:"tags"`
+	Tags          []DatabaseTag              `json:"tags"`
 	Description   *database.LocalizationText `json:"description,omitempty"`
 	Level         string                     `json:"level"`
 	Meta          json.RawMessage            `json:"meta,omitempty"`
