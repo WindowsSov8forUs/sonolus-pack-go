@@ -42,18 +42,22 @@ func TestRunVersion(t *testing.T) {
 	version = "v1.2.3"
 	t.Cleanup(func() { version = oldVersion })
 
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	code := run([]string{"--version"}, &stdout, &stderr)
+	for _, arg := range []string{"--version", "-V"} {
+		t.Run(arg, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			code := run([]string{arg}, &stdout, &stderr)
 
-	if code != 0 {
-		t.Fatalf("exit code = %d; want 0", code)
-	}
-	if got := stdout.String(); got != "v1.2.3\n" {
-		t.Fatalf("stdout = %q; want version", got)
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("stderr = %q; want empty", stderr.String())
+			if code != 0 {
+				t.Fatalf("exit code = %d; want 0", code)
+			}
+			if got := stdout.String(); got != "v1.2.3\n" {
+				t.Fatalf("stdout = %q; want version", got)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("stderr = %q; want empty", stderr.String())
+			}
+		})
 	}
 }
 

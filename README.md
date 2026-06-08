@@ -43,11 +43,17 @@ sonolus-pack -h
 sonolus-pack --version
 ```
 
+也可以使用短参数：
+
+```sh
+sonolus-pack -V
+```
+
 参数：
 
 - `-i`、`--input`：输入 source 目录，默认为 `source`
 - `-o`、`--output`：输出 pack 目录，默认为 `pack`
-- `--version`：输出版本号
+- `-V`、`--version`：输出版本号
 
 也可以在 Go 项目中直接调用库入口：
 
@@ -856,4 +862,4 @@ pack/
 
 `repository/` 包含处理后的资源。`db.json` 包含打包后的 Sonolus 数据库。
 
-打包开始前会清空输出目录；如果打包失败，输出目录会被删除，避免留下不完整结果。
+打包开始前会清空输出目录；如果打包失败，输出目录会被删除并返回非 0 退出码，避免留下不完整结果。

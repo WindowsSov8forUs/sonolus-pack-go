@@ -76,11 +76,131 @@ func TestParseLevelItemRejectsUseDefaultFalseWithoutItem(t *testing.T) {
 	}
 }
 
+func TestParseLevelItemCleansUseDefaultTrueItem(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": 1,
+		"rating": 1,
+		"title": { "en": "Title" },
+		"artists": { "en": "Artist" },
+		"author": { "en": "Author" },
+		"tags": [],
+		"engine": "engine",
+		"useSkin": { "useDefault": true, "item": "skin" },
+		"useBackground": { "useDefault": true },
+		"useEffect": { "useDefault": true },
+		"useParticle": { "useDefault": true }
+	}`)
+
+	item, err := schema.ParseLevelItem(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.UseSkin.Item != "" {
+		t.Fatalf("useDefault true item = %q; want cleaned empty", item.UseSkin.Item)
+	}
+	data, err := json.Marshal(item.UseSkin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != `{"useDefault":true}` {
+		t.Fatalf("marshaled use item = %s; want cleaned item omitted", data)
+	}
+}
+
 func TestParseSrlAcceptsNullableFields(t *testing.T) {
 	path := writeTemp(t, `{"hash": null, "url": "https://example.com"}`)
 
 	if _, err := schema.ParseSrl(path); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParseRejectsInvalidFieldTypes(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		parse   func(string) error
+	}{
+		{
+			name:    "localization value number",
+			content: `{"version":1,"title":{"en":1},"time":1,"author":{"en":"Author"},"tags":[]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "localization value null",
+			content: `{"version":1,"title":{"en":null},"time":1,"author":{"en":"Author"},"tags":[]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "tag non object",
+			content: `{"version":1,"title":{"en":"Title"},"time":1,"author":{"en":"Author"},"tags":["bad"]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "tag icon non string",
+			content: `{"version":1,"title":{"en":"Title"},"time":1,"author":{"en":"Author"},"tags":[{"icon":1}]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "tag title invalid localization",
+			content: `{"version":1,"title":{"en":"Title"},"time":1,"author":{"en":"Author"},"tags":[{"title":{"en":1}}]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "playlist levels non string",
+			content: `{"version":1,"title":{"en":"Title"},"subtitle":{"en":"Sub"},"author":{"en":"Author"},"tags":[],"levels":[1]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePlaylistItem(path)
+				return err
+			},
+		},
+		{
+			name:    "engine reference non string",
+			content: `{"version":13,"title":{"en":"Title"},"subtitle":{"en":"Sub"},"author":{"en":"Author"},"tags":[],"skin":1,"background":"background","effect":"effect","particle":"particle"}`,
+			parse: func(path string) error {
+				_, err := schema.ParseEngineItem(path)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.parse(writeTemp(t, tt.content)); err == nil {
+				t.Fatal("expected error")
+			}
+		})
+	}
+}
+
+func TestParseSrlRejectsInvalidShape(t *testing.T) {
+	tests := []string{
+		`[]`,
+		`"bad"`,
+		`{"hash":1}`,
+	}
+
+	for _, content := range tests {
+		t.Run(content, func(t *testing.T) {
+			if _, err := schema.ParseSrl(writeTemp(t, content)); err == nil {
+				t.Fatal("expected error")
+			}
+		})
 	}
 }
 

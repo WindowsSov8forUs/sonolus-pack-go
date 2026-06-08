@@ -40,6 +40,7 @@ func parseArgs(args []string, stderr io.Writer) (cliOptions, error) {
 	fs.StringVar(&options.output, "output", options.output, "output directory")
 	fs.StringVar(&options.output, "o", options.output, "output directory")
 	fs.BoolVar(&options.version, "version", false, "print version")
+	fs.BoolVar(&options.version, "V", false, "print version")
 
 	if err := fs.Parse(args); err != nil {
 		return cliOptions{}, err

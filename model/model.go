@@ -44,6 +44,7 @@ func (u *DatabaseUseItem) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("useDefault is required")
 	}
 	u.UseDefault = *raw.UseDefault
+	u.Item = ""
 	if !u.UseDefault {
 		if raw.Item == nil {
 			return fmt.Errorf("item is required when useDefault is false")
