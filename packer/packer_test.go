@@ -68,6 +68,44 @@ func TestPackMinimalSourceTree(t *testing.T) {
 	}
 }
 
+func TestPackMissingItemDirectoriesAsEmptyArrays(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	mkdir(t, source)
+	write(t, filepath.Join(source, "info.json"), `{"title":{"en":"Server"}}`)
+
+	if err := packer.Pack(context.Background(), packer.Options{
+		Input:  source,
+		Output: output,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertEmptySections(t, output)
+}
+
+func TestPackItemDirectoriesWithoutChildDirectoriesAsEmptyArrays(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	mkdir(t, source)
+	write(t, filepath.Join(source, "info.json"), `{"title":{"en":"Server"}}`)
+	for _, section := range itemSections() {
+		mkdir(t, filepath.Join(source, section))
+		write(t, filepath.Join(source, section, "ignored.txt"), "ignored")
+	}
+
+	if err := packer.Pack(context.Background(), packer.Options{
+		Input:  source,
+		Output: output,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertEmptySections(t, output)
+}
+
 func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")
@@ -96,6 +134,42 @@ func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("output should be removed, stat err: %v", err)
+	}
+}
+
+func assertEmptySections(t *testing.T, output string) {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(output, "db.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var db map[string]json.RawMessage
+	if err := json.Unmarshal(data, &db); err != nil {
+		t.Fatal(err)
+	}
+	for _, section := range itemSections() {
+		raw, ok := db[section]
+		if !ok {
+			t.Fatalf("%s missing from db.json: %s", section, data)
+		}
+		if string(raw) != "[]" {
+			t.Fatalf("%s = %s; want [] in %s", section, raw, data)
+		}
+	}
+}
+
+func itemSections() []string {
+	return []string{
+		"posts",
+		"playlists",
+		"levels",
+		"skins",
+		"backgrounds",
+		"effects",
+		"particles",
+		"engines",
+		"replays",
 	}
 }
 

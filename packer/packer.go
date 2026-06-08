@@ -110,7 +110,7 @@ func build(ctx context.Context, options Options) (model.Database, error) {
 }
 
 func processPosts(ctx context.Context, input string, packer resource.Packer) ([]model.PostItem, error) {
-	var items []model.PostItem
+	items := []model.PostItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "posts"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParsePostItem(filepath.Join(dir, "item.json"))
@@ -130,7 +130,7 @@ func processPosts(ctx context.Context, input string, packer resource.Packer) ([]
 }
 
 func processPlaylists(ctx context.Context, input string, packer resource.Packer) ([]model.PlaylistItem, error) {
-	var items []model.PlaylistItem
+	items := []model.PlaylistItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "playlists"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParsePlaylistItem(filepath.Join(dir, "item.json"))
@@ -150,7 +150,7 @@ func processPlaylists(ctx context.Context, input string, packer resource.Packer)
 }
 
 func processLevels(ctx context.Context, input string, packer resource.Packer) ([]model.LevelItem, error) {
-	var items []model.LevelItem
+	items := []model.LevelItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "levels"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseLevelItem(filepath.Join(dir, "item.json"))
@@ -179,7 +179,7 @@ func processLevels(ctx context.Context, input string, packer resource.Packer) ([
 }
 
 func processSkins(ctx context.Context, input string, packer resource.Packer) ([]model.SkinItem, error) {
-	var items []model.SkinItem
+	items := []model.SkinItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "skins"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseSkinItem(filepath.Join(dir, "item.json"))
@@ -203,7 +203,7 @@ func processSkins(ctx context.Context, input string, packer resource.Packer) ([]
 }
 
 func processBackgrounds(ctx context.Context, input string, packer resource.Packer) ([]model.BackgroundItem, error) {
-	var items []model.BackgroundItem
+	items := []model.BackgroundItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "backgrounds"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseBackgroundItem(filepath.Join(dir, "item.json"))
@@ -230,7 +230,7 @@ func processBackgrounds(ctx context.Context, input string, packer resource.Packe
 }
 
 func processEffects(ctx context.Context, input string, packer resource.Packer) ([]model.EffectItem, error) {
-	var items []model.EffectItem
+	items := []model.EffectItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "effects"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseEffectItem(filepath.Join(dir, "item.json"))
@@ -254,7 +254,7 @@ func processEffects(ctx context.Context, input string, packer resource.Packer) (
 }
 
 func processParticles(ctx context.Context, input string, packer resource.Packer) ([]model.ParticleItem, error) {
-	var items []model.ParticleItem
+	items := []model.ParticleItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "particles"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseParticleItem(filepath.Join(dir, "item.json"))
@@ -278,7 +278,7 @@ func processParticles(ctx context.Context, input string, packer resource.Packer)
 }
 
 func processEngines(ctx context.Context, input string, packer resource.Packer) ([]model.EngineItem, error) {
-	var items []model.EngineItem
+	items := []model.EngineItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "engines"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseEngineItem(filepath.Join(dir, "item.json"))
@@ -316,7 +316,7 @@ func processEngines(ctx context.Context, input string, packer resource.Packer) (
 }
 
 func processReplays(ctx context.Context, input string, packer resource.Packer) ([]model.ReplayItem, error) {
-	var items []model.ReplayItem
+	items := []model.ReplayItem{}
 	err := eachItemDir(ctx, filepath.Join(input, "replays"), func(name, dir string) error {
 		logPacking(packer.Logger, dir)
 		item, err := schema.ParseReplayItem(filepath.Join(dir, "item.json"))
