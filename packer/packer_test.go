@@ -106,6 +106,58 @@ func TestPackItemDirectoriesWithoutChildDirectoriesAsEmptyArrays(t *testing.T) {
 	assertEmptySections(t, output)
 }
 
+func TestPackPreservesPresentEmptyDescription(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	createMinimalSource(t, source)
+	write(t, filepath.Join(source, "info.json"), `{"title":{"en":"Server"},"description":{}}`)
+	writeItem(t, source, "posts", "post", `{"version":1,"title":{"en":"Post"},"time":1,"author":{"en":"Author"},"tags":[],"description":{}}`)
+
+	if err := packer.Pack(context.Background(), packer.Options{
+		Input:  source,
+		Output: output,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(output, "db.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var db map[string]json.RawMessage
+	if err := json.Unmarshal(data, &db); err != nil {
+		t.Fatal(err)
+	}
+
+	var info map[string]json.RawMessage
+	if err := json.Unmarshal(db["info"], &info); err != nil {
+		t.Fatal(err)
+	}
+	if got := string(info["description"]); got != "{}" {
+		t.Fatalf("info.description = %s; want {} in %s", got, data)
+	}
+
+	var posts []map[string]json.RawMessage
+	if err := json.Unmarshal(db["posts"], &posts); err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 1 {
+		t.Fatalf("posts length = %d; want 1 in %s", len(posts), data)
+	}
+	if got := string(posts[0]["description"]); got != "{}" {
+		t.Fatalf("post.description = %s; want {} in %s", got, data)
+	}
+
+	var levels []map[string]json.RawMessage
+	if err := json.Unmarshal(db["levels"], &levels); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := levels[0]["description"]; ok {
+		t.Fatalf("missing level description was output: %s", data)
+	}
+}
+
 func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")
