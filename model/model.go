@@ -59,6 +59,24 @@ func (u *DatabaseUseItem) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (u DatabaseUseItem) MarshalJSON() ([]byte, error) {
+	if u.UseDefault {
+		return json.Marshal(struct {
+			UseDefault bool `json:"useDefault"`
+		}{
+			UseDefault: true,
+		})
+	}
+
+	return json.Marshal(struct {
+		UseDefault bool   `json:"useDefault"`
+		Item       string `json:"item"`
+	}{
+		UseDefault: false,
+		Item:       u.Item,
+	})
+}
+
 type PostItem struct {
 	Name        string                     `json:"name"`
 	Version     int                        `json:"version"`

@@ -216,6 +216,34 @@ func TestParseLevelItemCleansUseDefaultTrueItem(t *testing.T) {
 	}
 }
 
+func TestParseLevelItemPreservesUseDefaultFalseEmptyItem(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": 1,
+		"rating": 1,
+		"title": { "en": "Title" },
+		"artists": { "en": "Artist" },
+		"author": { "en": "Author" },
+		"tags": [],
+		"engine": "engine",
+		"useSkin": { "useDefault": false, "item": "" },
+		"useBackground": { "useDefault": true },
+		"useEffect": { "useDefault": true },
+		"useParticle": { "useDefault": true }
+	}`)
+
+	item, err := schema.ParseLevelItem(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(item.UseSkin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != `{"useDefault":false,"item":""}` {
+		t.Fatalf("marshaled use item = %s; want item preserved", data)
+	}
+}
+
 func TestParseCleansNestedUnknownFields(t *testing.T) {
 	levelPath := writeTemp(t, `{
 		"version": 1,
