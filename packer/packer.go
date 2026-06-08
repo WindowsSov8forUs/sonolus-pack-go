@@ -3,6 +3,7 @@ package packer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,10 +33,10 @@ func Pack(ctx context.Context, options Options) error {
 		options.Output = "pack"
 	}
 	if err := os.RemoveAll(options.Output); err != nil {
-		return err
+		return fileError(options.Output, err)
 	}
 	if err := os.MkdirAll(options.Output, 0o755); err != nil {
-		return err
+		return fileError(options.Output, err)
 	}
 
 	db, err := build(ctx, options)
@@ -49,9 +50,10 @@ func Pack(ctx context.Context, options Options) error {
 		_ = os.RemoveAll(options.Output)
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(options.Output, "db.json"), data, 0o644); err != nil {
+	dbPath := filepath.Join(options.Output, "db.json")
+	if err := os.WriteFile(dbPath, data, 0o644); err != nil {
 		_ = os.RemoveAll(options.Output)
-		return err
+		return fileError(dbPath, err)
 	}
 	return nil
 }
@@ -443,4 +445,12 @@ func names[T any](items []T, name func(T) string) map[string]bool {
 
 func displayPath(path string) string {
 	return filepath.ToSlash(path)
+}
+
+func fileError(path string, err error) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Errorf("%s: %s: %s", displayPath(path), pathErr.Op, pathErr.Err)
+	}
+	return fmt.Errorf("%s: %w", displayPath(path), err)
 }

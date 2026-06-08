@@ -137,6 +137,31 @@ func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 	}
 }
 
+func TestPackOutputDirectoryErrorUsesSlashNormalizedPath(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	parent := filepath.Join(dir, "parent")
+	output := filepath.Join(parent, "pack")
+	mkdir(t, source)
+	write(t, filepath.Join(source, "info.json"), `{"title":{"en":"Server"}}`)
+	write(t, parent, "not a directory")
+
+	err := packer.Pack(context.Background(), packer.Options{
+		Input:  source,
+		Output: output,
+	})
+	if err == nil {
+		t.Fatal("expected output directory error")
+	}
+	want := filepath.ToSlash(output)
+	if !bytes.Contains([]byte(err.Error()), []byte(want)) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if bytes.Contains([]byte(err.Error()), []byte("\\")) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func assertEmptySections(t *testing.T, output string) {
 	t.Helper()
 
