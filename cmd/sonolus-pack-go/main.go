@@ -85,7 +85,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	fmt.Fprintln(stdout)
-	fmt.Fprintln(stdout, "[SUCCESS]", "Packed to:", options.output)
+	fmt.Fprintln(stdout, "[SUCCESS]", "Packed to:", displayPath(options.output))
 	return 0
 }
 

@@ -102,6 +102,33 @@ func TestRunTopLevelPackingLogUsesSlashNormalizedInput(t *testing.T) {
 	}
 }
 
+func TestRunSuccessLogUsesSlashNormalizedOutput(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "info.json"), []byte(`{"title":{"en":"Server"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{"--input", source, "--output", output}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d; want 0; stderr = %q", code, stderr.String())
+	}
+	want := []byte("[SUCCESS] Packed to: " + filepath.ToSlash(output))
+	if !bytes.Contains(stdout.Bytes(), want) {
+		t.Fatalf("stdout = %q; want %q", stdout.String(), want)
+	}
+	if bytes.Contains(stdout.Bytes(), []byte("\\")) {
+		t.Fatalf("stdout = %q; want slash-normalized paths", stdout.String())
+	}
+}
+
 func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")
