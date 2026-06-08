@@ -80,6 +80,28 @@ func TestRunReturnsFailureAndRemovesOutput(t *testing.T) {
 	}
 }
 
+func TestRunTopLevelPackingLogUsesSlashNormalizedInput(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "missing")
+	output := filepath.Join(dir, "pack")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{"--input", input, "--output", output}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("exit code = %d; want 1", code)
+	}
+	firstLine, _, _ := bytes.Cut(stdout.Bytes(), []byte("\n"))
+	want := []byte("[INFO] Packing: " + filepath.ToSlash(input))
+	if !bytes.Equal(firstLine, want) {
+		t.Fatalf("first stdout line = %q; want %q", firstLine, want)
+	}
+	if bytes.Contains(firstLine, []byte("\\")) {
+		t.Fatalf("first stdout line = %q; want slash-normalized input", firstLine)
+	}
+}
+
 func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")

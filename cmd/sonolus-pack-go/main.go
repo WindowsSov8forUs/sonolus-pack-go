@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/WindowsSov8forUs/sonolus-pack-go/packer"
 	"github.com/WindowsSov8forUs/sonolus-pack-go/schema"
@@ -61,7 +62,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 
-	fmt.Fprintln(stdout, "[INFO]", "Packing:", options.input)
+	fmt.Fprintln(stdout, "[INFO]", "Packing:", displayPath(options.input))
 	fmt.Fprintln(stdout)
 
 	if err := packer.Pack(context.Background(), packer.Options{
@@ -101,4 +102,8 @@ func validationValue(value json.RawMessage) string {
 		return "undefined"
 	}
 	return string(value)
+}
+
+func displayPath(path string) string {
+	return filepath.ToSlash(path)
 }
