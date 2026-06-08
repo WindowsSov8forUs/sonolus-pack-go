@@ -159,6 +159,27 @@ func TestPackResourceReadErrorIncludesSlashNormalizedPath(t *testing.T) {
 	}
 }
 
+func TestPackRepositoryWriteErrorIncludesSlashNormalizedPath(t *testing.T) {
+	dir := t.TempDir()
+	parent := filepath.Join(dir, "parent")
+	output := filepath.Join(parent, "pack")
+	base := filepath.Join(dir, "resource")
+	write(t, parent, "not a directory")
+	write(t, base, "raw")
+
+	_, _, err := resource.Packer{Output: output}.Pack(base, "png", false)
+	if err == nil {
+		t.Fatal("expected repository write error")
+	}
+	want := filepath.ToSlash(filepath.Join(output, "repository"))
+	if !bytes.Contains([]byte(err.Error()), []byte(want)) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if bytes.Contains([]byte(err.Error()), []byte("\\")) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func TestPackBinResourceGzipsBytes(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "pack")

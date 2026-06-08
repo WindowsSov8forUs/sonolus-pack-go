@@ -99,10 +99,10 @@ func (p Packer) write(data []byte) (*core.Srl, bool, error) {
 	hash := crypto.Hash(data)
 	path := filepath.Join(p.Output, "repository", hash)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil, false, err
+		return nil, false, fileError(filepath.Dir(path), err)
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return nil, false, err
+		return nil, false, fileError(path, err)
 	}
 
 	hashValue := core.Value(hash)
