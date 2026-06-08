@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/WindowsSov8forUs/sonolus-pack-go/schema"
@@ -56,6 +57,48 @@ func TestParsePostItemRejectsWrongVersion(t *testing.T) {
 	}
 }
 
+func TestParsePostItemAcceptsFloatVersionLiteral(t *testing.T) {
+	path := writeTemp(t, `{
+		"version": 1.0,
+		"title": { "en": "Title" },
+		"time": 1,
+		"author": { "en": "Author" },
+		"tags": []
+	}`)
+
+	item, err := schema.ParsePostItem(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Version != 1 {
+		t.Fatalf("version = %d; want 1", item.Version)
+	}
+}
+
+func TestParsePostItemRejectsInvalidVersionTypes(t *testing.T) {
+	tests := []string{
+		`null`,
+		`"1"`,
+		`true`,
+		`2`,
+	}
+
+	for _, version := range tests {
+		t.Run(version, func(t *testing.T) {
+			path := writeTemp(t, `{
+				"version": `+version+`,
+				"title": { "en": "Title" },
+				"time": 1,
+				"author": { "en": "Author" },
+				"tags": []
+			}`)
+			if _, err := schema.ParsePostItem(path); err == nil {
+				t.Fatal("expected version error")
+			}
+		})
+	}
+}
+
 func TestParseLevelItemRejectsUseDefaultFalseWithoutItem(t *testing.T) {
 	path := writeTemp(t, `{
 		"version": 1,
@@ -104,6 +147,67 @@ func TestParseLevelItemCleansUseDefaultTrueItem(t *testing.T) {
 	}
 	if string(data) != `{"useDefault":true}` {
 		t.Fatalf("marshaled use item = %s; want cleaned item omitted", data)
+	}
+}
+
+func TestParseRejectsInvalidNumberFields(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		parse   func(string) error
+	}{
+		{
+			name:    "post time null",
+			content: `{"version":1,"title":{"en":"Title"},"time":null,"author":{"en":"Author"},"tags":[]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "post time string",
+			content: `{"version":1,"title":{"en":"Title"},"time":"1","author":{"en":"Author"},"tags":[]}`,
+			parse: func(path string) error {
+				_, err := schema.ParsePostItem(path)
+				return err
+			},
+		},
+		{
+			name:    "level rating null",
+			content: `{"version":1,"rating":null,"title":{"en":"Title"},"artists":{"en":"Artist"},"author":{"en":"Author"},"tags":[],"engine":"engine","useSkin":{"useDefault":true},"useBackground":{"useDefault":true},"useEffect":{"useDefault":true},"useParticle":{"useDefault":true}}`,
+			parse: func(path string) error {
+				_, err := schema.ParseLevelItem(path)
+				return err
+			},
+		},
+		{
+			name:    "level rating object",
+			content: `{"version":1,"rating":{},"title":{"en":"Title"},"artists":{"en":"Artist"},"author":{"en":"Author"},"tags":[],"engine":"engine","useSkin":{"useDefault":true},"useBackground":{"useDefault":true},"useEffect":{"useDefault":true},"useParticle":{"useDefault":true}}`,
+			parse: func(path string) error {
+				_, err := schema.ParseLevelItem(path)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.parse(writeTemp(t, tt.content)); err == nil {
+				t.Fatal("expected number error")
+			}
+		})
+	}
+}
+
+func TestParseMissingFileReportsDoesNotExist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "item.json")
+
+	_, err := schema.ParsePostItem(path)
+	if err == nil {
+		t.Fatal("expected missing file error")
+	}
+	if !strings.Contains(err.Error(), "Does not exist") {
+		t.Fatalf("error = %q; want Does not exist", err.Error())
 	}
 }
 

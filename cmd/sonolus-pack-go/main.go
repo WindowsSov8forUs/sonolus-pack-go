@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/WindowsSov8forUs/sonolus-pack-go/pack"
+	"github.com/WindowsSov8forUs/sonolus-pack-go/schema"
 )
 
 var version = "dev"
@@ -66,7 +68,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		Output: options.output,
 		Logger: logger{w: stdout},
 	}); err != nil {
+		var validationErr *schema.ValidationError
 		fmt.Fprintln(stdout)
+		if errors.As(err, &validationErr) {
+			fmt.Fprintln(stderr, "[ERROR]", validationErr.Path+":", validationErr.Message)
+		}
 		fmt.Fprintln(stderr, "[FAILED]", err)
 		return 1
 	}

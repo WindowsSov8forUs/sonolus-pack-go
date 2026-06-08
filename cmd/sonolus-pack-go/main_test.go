@@ -79,3 +79,38 @@ func TestRunReturnsFailureAndRemovesOutput(t *testing.T) {
 		t.Fatalf("output should be removed, stat err: %v", err)
 	}
 }
+
+func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	output := filepath.Join(dir, "pack")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "info.json"), []byte(`{"title":{"en":1}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{"--input", source, "--output", output}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("exit code = %d; want 1", code)
+	}
+	got := stderr.String()
+	errorIndex := bytes.Index([]byte(got), []byte("[ERROR]"))
+	failedIndex := bytes.Index([]byte(got), []byte("[FAILED]"))
+	if errorIndex < 0 {
+		t.Fatalf("stderr = %q; want [ERROR]", got)
+	}
+	if failedIndex < 0 {
+		t.Fatalf("stderr = %q; want [FAILED]", got)
+	}
+	if errorIndex > failedIndex {
+		t.Fatalf("stderr = %q; want [ERROR] before [FAILED]", got)
+	}
+	if _, err := os.Stat(output); !os.IsNotExist(err) {
+		t.Fatalf("output should be removed, stat err: %v", err)
+	}
+}

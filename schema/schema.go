@@ -4,10 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/WindowsSov8forUs/sonolus-core-go/core"
 	"github.com/WindowsSov8forUs/sonolus-pack-go/model"
 )
+
+type ValidationError struct {
+	Path     string
+	JSONPath string
+	Message  string
+	Value    json.RawMessage
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("Invalid data: %s", e.Path)
+}
 
 func ParseInfo(path string) (model.ServerInfo, error) {
 	var item model.ServerInfo
@@ -73,6 +85,9 @@ func ParseReplayItem(path string) (model.ReplayItem, error) {
 func parse(path string, out any, required []string, version int) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s: Does not exist", path)
+		}
 		return err
 	}
 
@@ -81,26 +96,29 @@ func parse(path string, out any, required []string, version int) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if fields == nil {
-		return fmt.Errorf("%s: must be an object", path)
+		return newValidationError(path, "", "must be an object", data)
 	}
 	for _, key := range required {
-		if _, ok := fields[key]; !ok {
-			return fmt.Errorf("%s: %s is required", path, key)
+		raw, ok := fields[key]
+		if !ok {
+			return newValidationError(path, "/"+key, key+" is required", nil)
+		}
+		if len(raw) == 0 {
+			return newValidationError(path, "/"+key, key+" is required", raw)
 		}
 	}
 	if version != 0 {
-		var got int
-		if err := json.Unmarshal(fields["version"], &got); err != nil {
-			return fmt.Errorf("%s: version must be %d", path, version)
-		}
-		if got != version {
-			return fmt.Errorf("%s: version must be %d, got %d", path, version, got)
+		if err := validateVersion(path, fields, version); err != nil {
+			return err
 		}
 	}
 	if err := validateFields(path, fields); err != nil {
 		return err
 	}
 
+	if data, err = json.Marshal(fields); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
 	if err := json.Unmarshal(data, out); err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
@@ -123,11 +141,38 @@ func validateFields(path string, fields map[string]json.RawMessage) error {
 			err = validateString(raw)
 		case "useSkin", "useBackground", "useEffect", "useParticle":
 			err = validateUseItem(raw)
+		case "time", "rating":
+			err = validateNumber(raw)
 		}
 		if err != nil {
-			return fmt.Errorf("%s: %s: %w", path, key, err)
+			return newValidationError(path, "/"+key, fmt.Sprintf("%s: %s", key, err), raw)
 		}
 	}
+	return nil
+}
+
+func newValidationError(path, jsonPath, message string, value json.RawMessage) error {
+	return &ValidationError{
+		Path:     path,
+		JSONPath: jsonPath,
+		Message:  message,
+		Value:    value,
+	}
+}
+
+func validateVersion(path string, fields map[string]json.RawMessage, version int) error {
+	raw := fields["version"]
+	if string(raw) == "null" {
+		return newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+	}
+	var got float64
+	if err := json.Unmarshal(raw, &got); err != nil {
+		return newValidationError(path, "/version", fmt.Sprintf("version must be %d", version), raw)
+	}
+	if got != float64(version) {
+		return newValidationError(path, "/version", fmt.Sprintf("version must be %d, got %s", version, string(raw)), raw)
+	}
+	fields["version"] = json.RawMessage(strconv.Itoa(version))
 	return nil
 }
 
@@ -200,6 +245,17 @@ func validateString(raw json.RawMessage) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
 		return fmt.Errorf("must be a string")
+	}
+	return nil
+}
+
+func validateNumber(raw json.RawMessage) error {
+	if string(raw) == "null" {
+		return fmt.Errorf("must be a number")
+	}
+	var value float64
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return fmt.Errorf("must be a number")
 	}
 	return nil
 }
