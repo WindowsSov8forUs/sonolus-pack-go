@@ -70,7 +70,7 @@ func (p Packer) packSrl(pathBase string) (*core.Srl, bool, error) {
 		if os.IsNotExist(err) {
 			return nil, false, nil
 		}
-		return nil, false, err
+		return nil, false, fileError(path, err)
 	}
 	srl, err := schema.ParseSrl(path)
 	if err != nil {

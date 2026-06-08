@@ -35,6 +35,23 @@ func TestPackUsesSrlPriority(t *testing.T) {
 	}
 }
 
+func TestPackSrlStatErrorIncludesSlashNormalizedPath(t *testing.T) {
+	dir := t.TempDir()
+	base := filepath.Join(dir, "resource\x00bad")
+
+	_, _, err := resource.Packer{Output: filepath.Join(dir, "pack")}.Pack(base, "png", false)
+	if err == nil {
+		t.Fatal("expected SRL stat error")
+	}
+	want := filepath.ToSlash(base + ".srl")
+	if !bytes.Contains([]byte(err.Error()), []byte(want)) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if bytes.Contains([]byte(err.Error()), []byte("\\")) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func TestPackUsesExtensionlessBeforeExt(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "pack")
