@@ -38,23 +38,30 @@ type DatabaseTag struct {
 }
 
 func (u *DatabaseUseItem) UnmarshalJSON(data []byte) error {
-	var raw struct {
-		UseDefault *bool   `json:"useDefault"`
-		Item       *string `json:"item"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
 	}
-	if raw.UseDefault == nil {
+
+	useDefaultRaw, ok := fields["useDefault"]
+	if !ok {
 		return fmt.Errorf("useDefault is required")
 	}
-	u.UseDefault = *raw.UseDefault
+	if err := json.Unmarshal(useDefaultRaw, &u.UseDefault); err != nil {
+		return fmt.Errorf("useDefault must be a boolean")
+	}
+
 	u.Item = ""
-	if !u.UseDefault {
-		if raw.Item == nil {
-			return fmt.Errorf("item is required when useDefault is false")
-		}
-		u.Item = *raw.Item
+	if u.UseDefault {
+		return nil
+	}
+
+	itemRaw, ok := fields["item"]
+	if !ok {
+		return fmt.Errorf("item is required when useDefault is false")
+	}
+	if err := json.Unmarshal(itemRaw, &u.Item); err != nil {
+		return fmt.Errorf("item must be a string")
 	}
 	return nil
 }

@@ -194,7 +194,7 @@ func TestParseLevelItemCleansUseDefaultTrueItem(t *testing.T) {
 		"author": { "en": "Author" },
 		"tags": [],
 		"engine": "engine",
-		"useSkin": { "useDefault": true, "item": "skin" },
+		"useSkin": { "useDefault": true, "item": 1 },
 		"useBackground": { "useDefault": true },
 		"useEffect": { "useDefault": true },
 		"useParticle": { "useDefault": true }
