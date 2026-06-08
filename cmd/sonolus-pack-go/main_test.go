@@ -145,3 +145,26 @@ func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 		t.Fatalf("output should be removed, stat err: %v", err)
 	}
 }
+
+func TestValidationValueUsesJSONStringifyStyle(t *testing.T) {
+	tests := []struct {
+		name  string
+		value []byte
+		want  string
+	}{
+		{name: "missing", want: "undefined"},
+		{name: "number", value: []byte(`2.0`), want: "2"},
+		{name: "string", value: []byte(`"1"`), want: `"1"`},
+		{name: "null", value: []byte(`null`), want: "null"},
+		{name: "object", value: []byte(`{"b":2.0,"a":[true,null]}`), want: `{"a":[true,null],"b":2}`},
+		{name: "invalid raw fallback", value: []byte(`{`), want: `{`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := validationValue(tt.value); got != tt.want {
+				t.Fatalf("validationValue(%q) = %q; want %q", tt.value, got, tt.want)
+			}
+		})
+	}
+}

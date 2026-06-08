@@ -101,7 +101,15 @@ func validationValue(value json.RawMessage) string {
 	if len(value) == 0 {
 		return "undefined"
 	}
-	return string(value)
+	var parsed any
+	if err := json.Unmarshal(value, &parsed); err != nil {
+		return string(value)
+	}
+	formatted, err := json.Marshal(parsed)
+	if err != nil {
+		return string(value)
+	}
+	return string(formatted)
 }
 
 func displayPath(path string) string {
