@@ -119,4 +119,4 @@ jobs:
         run: |
           set -euo pipefail
           files=$(find dist -type f \( -name '*.zip' -o -name '*.tar.gz' \) | sort)
-          gh release upload "${TAG}" ${files} checksums.txt --clobber
+          gh release upload "${TAG}" ${files} checksums.txt --repo "${GITHUB_REPOSITORY}" --clobber
