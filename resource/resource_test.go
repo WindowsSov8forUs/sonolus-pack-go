@@ -138,6 +138,27 @@ func TestPackJSONResourceErrorIncludesPath(t *testing.T) {
 	}
 }
 
+func TestPackResourceReadErrorIncludesSlashNormalizedPath(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "pack")
+	base := filepath.Join(dir, "resource")
+	if err := os.Mkdir(base, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err := resource.Packer{Output: output}.Pack(base, "png", false)
+	if err == nil {
+		t.Fatal("expected read error")
+	}
+	want := filepath.ToSlash(base)
+	if !bytes.Contains([]byte(err.Error()), []byte(want)) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if bytes.Contains([]byte(err.Error()), []byte("\\")) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func TestPackBinResourceGzipsBytes(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "pack")

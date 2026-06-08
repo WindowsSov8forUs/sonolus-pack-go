@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,13 +29,13 @@ func (p Packer) Pack(pathBase, ext string, optional bool) (*core.Srl, bool, erro
 	pathExt := pathBase + "." + ext
 	if data, ok, err := readIfExists(pathBase); ok || err != nil {
 		if err != nil {
-			return nil, false, err
+			return nil, false, fileError(pathBase, err)
 		}
 		return p.write(data)
 	}
 	if data, ok, err := readIfExists(pathExt); ok || err != nil {
 		if err != nil {
-			return nil, false, err
+			return nil, false, fileError(pathExt, err)
 		}
 		switch ext {
 		case "json":
@@ -118,6 +119,14 @@ func readIfExists(path string) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 	return nil, false, err
+}
+
+func fileError(path string, err error) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Errorf("%s: %s: %s", displayPath(path), pathErr.Op, pathErr.Err)
+	}
+	return fmt.Errorf("%s: %w", displayPath(path), err)
 }
 
 func displayPath(path string) string {
