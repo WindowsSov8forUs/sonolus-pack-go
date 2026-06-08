@@ -34,11 +34,11 @@ jobs:
         include:
           - goos: windows
             goarch: amd64
-            archive: zip
+            archive: exe
             exe: .exe
           - goos: windows
             goarch: arm64
-            archive: zip
+            archive: exe
             exe: .exe
           - goos: linux
             goarch: amd64
@@ -80,9 +80,7 @@ jobs:
           binary="${name}${{ matrix.exe }}"
           go build -trimpath -ldflags="-s -w -X main.version=${TAG}" -o "dist/${binary}" ./cmd/sonolus-pack-go
           cd dist
-          if [ "${{ matrix.archive }}" = "zip" ]; then
-            python3 -m zipfile -c "${name}.zip" "${binary}"
-          else
+          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
             tar -czf "${name}.tar.gz" "${binary}"
           fi
 
@@ -91,6 +89,7 @@ jobs:
         with:
           name: sonolus-pack-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
+            dist/*.exe
             dist/*.zip
             dist/*.tar.gz
           if-no-files-found: error
@@ -108,7 +107,7 @@ jobs:
       - name: Generate checksums
         run: |
           set -euo pipefail
-          find dist -type f \( -name '*.zip' -o -name '*.tar.gz' \) -print0 \
+          find dist -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.tar.gz' \) -print0 \
             | sort -z \
             | xargs -0 sha256sum > checksums.txt
 
@@ -118,5 +117,5 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          files=$(find dist -type f \( -name '*.zip' -o -name '*.tar.gz' \) | sort)
+          files=$(find dist -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.tar.gz' \) | sort)
           gh release upload "${TAG}" ${files} checksums.txt --repo "${GITHUB_REPOSITORY}" --clobber
