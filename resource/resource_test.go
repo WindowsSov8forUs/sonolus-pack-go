@@ -119,6 +119,25 @@ func TestPackJSONResourceCompressesJSON(t *testing.T) {
 	}
 }
 
+func TestPackJSONResourceErrorIncludesPath(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "pack")
+	base := filepath.Join(dir, "data")
+	write(t, base+".json", `{`)
+
+	_, _, err := resource.Packer{Output: output}.Pack(base, "json", false)
+	if err == nil {
+		t.Fatal("expected JSON error")
+	}
+	want := filepath.ToSlash(base + ".json")
+	if !bytes.Contains([]byte(err.Error()), []byte(want)) {
+		t.Fatalf("error = %q; want path %q", err.Error(), want)
+	}
+	if bytes.Contains([]byte(err.Error()), []byte("\\")) {
+		t.Fatalf("error = %q; want slash-normalized path", err.Error())
+	}
+}
+
 func TestPackBinResourceGzipsBytes(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "pack")

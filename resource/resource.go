@@ -38,7 +38,11 @@ func (p Packer) Pack(pathBase, ext string, optional bool) (*core.Srl, bool, erro
 		}
 		switch ext {
 		case "json":
-			return p.packJSON(data)
+			srl, ok, err := p.packJSON(data)
+			if err != nil {
+				return nil, false, fmt.Errorf("%s: %w", displayPath(pathExt), err)
+			}
+			return srl, ok, nil
 		case "bin":
 			return p.packBin(data)
 		default:
