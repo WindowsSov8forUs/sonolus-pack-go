@@ -113,6 +113,12 @@ func TestRunPrintsValidationErrorBeforeFailed(t *testing.T) {
 	if bytes.Count([]byte(got), []byte("[ERROR]")) < 2 {
 		t.Fatalf("stderr = %q; want multiple [ERROR] lines", got)
 	}
+	if !bytes.Contains([]byte(got), []byte("got ")) || !bytes.Contains([]byte(got), []byte("(/")) {
+		t.Fatalf("stderr = %q; want got value and json path", got)
+	}
+	if bytes.Contains([]byte(got), []byte("\\")) {
+		t.Fatalf("stderr = %q; want slash-normalized paths", got)
+	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("output should be removed, stat err: %v", err)
 	}

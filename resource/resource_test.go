@@ -77,6 +77,25 @@ func TestPackOptionalAndRequiredMissing(t *testing.T) {
 	}
 }
 
+func TestPackMissingResourceLogsSlashNormalizedPath(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "pack")
+	base := filepath.Join(dir, "missing")
+	var log bytes.Buffer
+
+	_, _, err := resource.Packer{Output: output, Logger: testLogger{w: &log}}.Pack(base, "png", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := log.String()
+	if !bytes.Contains([]byte(got), []byte(filepath.ToSlash(base)+"[.png/.srl]: Does not exist, skipped")) {
+		t.Fatalf("log = %q; want slash-normalized missing path", got)
+	}
+	if bytes.Contains([]byte(got), []byte("\\")) {
+		t.Fatalf("log = %q; want no backslash", got)
+	}
+}
+
 func TestPackJSONResourceCompressesJSON(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "pack")
@@ -148,4 +167,26 @@ func write(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+type testLogger struct {
+	w *bytes.Buffer
+}
+
+func (l testLogger) Info(args ...any) {
+	l.write(args...)
+}
+
+func (l testLogger) Warning(args ...any) {
+	l.write(args...)
+}
+
+func (l testLogger) write(args ...any) {
+	for i, arg := range args {
+		if i != 0 {
+			l.w.WriteByte(' ')
+		}
+		_, _ = l.w.WriteString(arg.(string))
+	}
+	l.w.WriteByte('\n')
 }

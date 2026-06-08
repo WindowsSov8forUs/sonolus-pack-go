@@ -44,6 +44,44 @@ func TestParsePostItemPreservesMetaAndCleansUnknownFields(t *testing.T) {
 	}
 }
 
+func TestParseIgnoresUnknownFieldsWithKnownNamesFromOtherSchemas(t *testing.T) {
+	infoPath := writeTemp(t, `{
+		"title": { "en": "Server" },
+		"hash": 1
+	}`)
+	info, err := schema.ParseInfo(infoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	infoData, err := json.Marshal(info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(infoData), "hash") {
+		t.Fatalf("info unknown hash was not cleaned: %s", infoData)
+	}
+
+	postPath := writeTemp(t, `{
+		"version": 1,
+		"title": { "en": "Title" },
+		"time": 1,
+		"author": { "en": "Author" },
+		"tags": [],
+		"levels": [1]
+	}`)
+	post, err := schema.ParsePostItem(postPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	postData, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(postData), "levels") {
+		t.Fatalf("post unknown levels was not cleaned: %s", postData)
+	}
+}
+
 func TestParsePostItemRejectsWrongVersion(t *testing.T) {
 	path := writeTemp(t, `{
 		"version": 2,
@@ -55,6 +93,33 @@ func TestParsePostItemRejectsWrongVersion(t *testing.T) {
 
 	if _, err := schema.ParsePostItem(path); err == nil {
 		t.Fatal("expected version error")
+	}
+}
+
+func TestParsePostItemMissingVersionReportsOnlyRequired(t *testing.T) {
+	path := writeTemp(t, `{
+		"title": { "en": "Title" },
+		"time": 1,
+		"author": { "en": "Author" },
+		"tags": []
+	}`)
+
+	_, err := schema.ParsePostItem(path)
+	if err == nil {
+		t.Fatal("expected version error")
+	}
+	var validationErrs *schema.ValidationErrors
+	if !errors.As(err, &validationErrs) {
+		t.Fatalf("error = %T %v; want ValidationErrors", err, err)
+	}
+	count := 0
+	for _, item := range validationErrs.Items {
+		if item.JSONPath == "/version" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("version error count = %d; want 1", count)
 	}
 }
 

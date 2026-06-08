@@ -27,17 +27,20 @@ func TestPackMinimalSourceTree(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"[INFO] Packing: " + source,
-		"[INFO] Packing: " + filepath.Join(source, "skins", "skin"),
-		"[INFO] Packing: " + filepath.Join(source, "backgrounds", "background"),
-		"[INFO] Packing: " + filepath.Join(source, "effects", "effect"),
-		"[INFO] Packing: " + filepath.Join(source, "particles", "particle"),
-		"[INFO] Packing: " + filepath.Join(source, "engines", "engine"),
-		"[INFO] Packing: " + filepath.Join(source, "levels", "level"),
+		"[INFO] Packing: " + filepath.ToSlash(source),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "skins", "skin")),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "backgrounds", "background")),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "effects", "effect")),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "particles", "particle")),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "engines", "engine")),
+		"[INFO] Packing: " + filepath.ToSlash(filepath.Join(source, "levels", "level")),
 	} {
 		if !bytes.Contains(log.Bytes(), []byte(want)) {
 			t.Fatalf("log = %q; want %q", log.String(), want)
 		}
+	}
+	if bytes.Contains(log.Bytes(), []byte("\\")) {
+		t.Fatalf("log = %q; want slash-normalized paths", log.String())
 	}
 
 	if _, err := os.Stat(filepath.Join(output, "db.json")); err != nil {
@@ -81,11 +84,15 @@ func TestPackRemovesOutputOnReferenceError(t *testing.T) {
 		"levels": ["missing"]
 	}`)
 
-	if err := packer.Pack(context.Background(), packer.Options{
+	err := packer.Pack(context.Background(), packer.Options{
 		Input:  source,
 		Output: output,
-	}); err == nil {
+	})
+	if err == nil {
 		t.Fatal("expected reference error")
+	}
+	if got, want := err.Error(), "playlists/playlist: missing not found (/levels/0)"; got != want {
+		t.Fatalf("error = %q; want %q", got, want)
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("output should be removed, stat err: %v", err)

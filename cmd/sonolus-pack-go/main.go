@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -73,10 +74,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout)
 		if errors.As(err, &validationErrs) {
 			for _, item := range validationErrs.Items {
-				fmt.Fprintln(stderr, "[ERROR]", item.Path+":", item.Message)
+				printValidationError(stderr, item)
 			}
 		} else if errors.As(err, &validationErr) {
-			fmt.Fprintln(stderr, "[ERROR]", validationErr.Path+":", validationErr.Message)
+			printValidationError(stderr, *validationErr)
 		}
 		fmt.Fprintln(stderr, "[FAILED]", err)
 		return 1
@@ -89,4 +90,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func printValidationError(stderr io.Writer, err schema.ValidationError) {
+	fmt.Fprintf(stderr, "[ERROR] %s: %s, got %s (%s)\n", err.Path, err.Message, validationValue(err.Value), err.JSONPath)
+}
+
+func validationValue(value json.RawMessage) string {
+	if len(value) == 0 {
+		return "undefined"
+	}
+	return string(value)
 }

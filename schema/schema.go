@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/WindowsSov8forUs/sonolus-core-go/core"
@@ -32,7 +33,7 @@ func (e *ValidationErrors) Error() string {
 
 func ParseInfo(path string) (model.ServerInfo, error) {
 	var item model.ServerInfo
-	if err := parse(path, &item, []string{"title"}, 0); err != nil {
+	if err := parse(path, &item, []string{"title", "description"}, []string{"title"}, 0); err != nil {
 		return model.ServerInfo{}, err
 	}
 	return item, nil
@@ -40,7 +41,7 @@ func ParseInfo(path string) (model.ServerInfo, error) {
 
 func ParseSrl(path string) (core.Srl, error) {
 	var srl core.Srl
-	if err := parse(path, &srl, nil, 0); err != nil {
+	if err := parse(path, &srl, []string{"hash", "url"}, nil, 0); err != nil {
 		return core.Srl{}, err
 	}
 	return srl, nil
@@ -48,54 +49,54 @@ func ParseSrl(path string) (core.Srl, error) {
 
 func ParsePostItem(path string) (model.PostItem, error) {
 	var item model.PostItem
-	return item, parse(path, &item, []string{"version", "title", "time", "author", "tags"}, 1)
+	return item, parse(path, &item, []string{"version", "title", "time", "author", "tags", "description", "meta"}, []string{"version", "title", "time", "author", "tags"}, 1)
 }
 
 func ParsePlaylistItem(path string) (model.PlaylistItem, error) {
 	var item model.PlaylistItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "levels"}, 1)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "levels", "meta"}, []string{"version", "title", "subtitle", "author", "tags", "levels"}, 1)
 }
 
 func ParseLevelItem(path string) (model.LevelItem, error) {
 	var item model.LevelItem
-	return item, parse(path, &item, []string{"version", "rating", "title", "artists", "author", "tags", "engine", "useSkin", "useBackground", "useEffect", "useParticle"}, 1)
+	return item, parse(path, &item, []string{"version", "rating", "title", "artists", "author", "tags", "description", "engine", "useSkin", "useBackground", "useEffect", "useParticle", "meta"}, []string{"version", "rating", "title", "artists", "author", "tags", "engine", "useSkin", "useBackground", "useEffect", "useParticle"}, 1)
 }
 
 func ParseSkinItem(path string) (model.SkinItem, error) {
 	var item model.SkinItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags"}, 4)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "meta"}, []string{"version", "title", "subtitle", "author", "tags"}, 4)
 }
 
 func ParseBackgroundItem(path string) (model.BackgroundItem, error) {
 	var item model.BackgroundItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags"}, 2)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "meta"}, []string{"version", "title", "subtitle", "author", "tags"}, 2)
 }
 
 func ParseEffectItem(path string) (model.EffectItem, error) {
 	var item model.EffectItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags"}, 5)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "meta"}, []string{"version", "title", "subtitle", "author", "tags"}, 5)
 }
 
 func ParseParticleItem(path string) (model.ParticleItem, error) {
 	var item model.ParticleItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags"}, 3)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "meta"}, []string{"version", "title", "subtitle", "author", "tags"}, 3)
 }
 
 func ParseEngineItem(path string) (model.EngineItem, error) {
 	var item model.EngineItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "skin", "background", "effect", "particle"}, 13)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "skin", "background", "effect", "particle", "meta"}, []string{"version", "title", "subtitle", "author", "tags", "skin", "background", "effect", "particle"}, 13)
 }
 
 func ParseReplayItem(path string) (model.ReplayItem, error) {
 	var item model.ReplayItem
-	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "level"}, 1)
+	return item, parse(path, &item, []string{"version", "title", "subtitle", "author", "tags", "description", "level", "meta"}, []string{"version", "title", "subtitle", "author", "tags", "level"}, 1)
 }
 
-func parse(path string, out any, required []string, version int) error {
+func parse(path string, out any, allowed, required []string, version int) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s: Does not exist", path)
+			return fmt.Errorf("%s: Does not exist", displayPath(path))
 		}
 		return err
 	}
@@ -106,13 +107,15 @@ func parse(path string, out any, required []string, version int) error {
 
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
-		return fmt.Errorf("%s: %w", path, err)
+		return fmt.Errorf("%s: %w", displayPath(path), err)
 	}
 
 	var validationErrors []ValidationError
+	missing := map[string]bool{}
 	for _, key := range required {
 		raw, ok := fields[key]
 		if !ok {
+			missing[key] = true
 			validationErrors = append(validationErrors, newValidationError(path, "/"+key, key+" is required", nil))
 			continue
 		}
@@ -120,21 +123,21 @@ func parse(path string, out any, required []string, version int) error {
 			validationErrors = append(validationErrors, newValidationError(path, "/"+key, key+" is required", raw))
 		}
 	}
-	if version != 0 {
+	if version != 0 && !missing["version"] {
 		if validationErr := validateVersion(path, fields, version); validationErr != nil {
 			validationErrors = append(validationErrors, *validationErr)
 		}
 	}
-	validationErrors = append(validationErrors, validateFields(path, fields)...)
+	validationErrors = append(validationErrors, validateFields(path, fields, allowed)...)
 	if len(validationErrors) != 0 {
-		return &ValidationErrors{Path: path, Items: validationErrors}
+		return &ValidationErrors{Path: displayPath(path), Items: validationErrors}
 	}
 
 	if data, err = json.Marshal(fields); err != nil {
-		return fmt.Errorf("%s: %w", path, err)
+		return fmt.Errorf("%s: %w", displayPath(path), err)
 	}
 	if err := json.Unmarshal(data, out); err != nil {
-		return fmt.Errorf("%s: %w", path, err)
+		return fmt.Errorf("%s: %w", displayPath(path), err)
 	}
 	return nil
 }
@@ -142,18 +145,22 @@ func parse(path string, out any, required []string, version int) error {
 func validateTopLevelObject(path string, data []byte) error {
 	var value any
 	if err := json.Unmarshal(data, &value); err != nil {
-		return fmt.Errorf("%s: %w", path, err)
+		return fmt.Errorf("%s: %w", displayPath(path), err)
 	}
 	if _, ok := value.(map[string]any); !ok {
 		validationErr := newValidationError(path, "", "must be an object", data)
-		return &ValidationErrors{Path: path, Items: []ValidationError{validationErr}}
+		return &ValidationErrors{Path: displayPath(path), Items: []ValidationError{validationErr}}
 	}
 	return nil
 }
 
-func validateFields(path string, fields map[string]json.RawMessage) []ValidationError {
+func validateFields(path string, fields map[string]json.RawMessage, allowed []string) []ValidationError {
 	var errors []ValidationError
-	for key, raw := range fields {
+	for _, key := range allowed {
+		raw, ok := fields[key]
+		if !ok {
+			continue
+		}
 		var err error
 		switch key {
 		case "title", "subtitle", "author", "description", "artists":
@@ -180,11 +187,15 @@ func validateFields(path string, fields map[string]json.RawMessage) []Validation
 
 func newValidationError(path, jsonPath, message string, value json.RawMessage) ValidationError {
 	return ValidationError{
-		Path:     path,
+		Path:     displayPath(path),
 		JSONPath: jsonPath,
 		Message:  message,
 		Value:    value,
 	}
+}
+
+func displayPath(path string) string {
+	return filepath.ToSlash(path)
 }
 
 func validateVersion(path string, fields map[string]json.RawMessage, version int) *ValidationError {

@@ -338,7 +338,7 @@ func processReplays(ctx context.Context, input string, packer resource.Packer) (
 
 func logPacking(logger Logger, path string) {
 	if logger != nil {
-		logger.Info("Packing:", path)
+		logger.Info("Packing:", displayPath(path))
 	}
 }
 
@@ -387,47 +387,47 @@ func checkReferences(db model.Database) error {
 		parent := "playlists/" + playlist.Name
 		for i, level := range playlist.Levels {
 			if !levelNames[level] {
-				return fmt.Errorf("%s: %s not found (/levels/%d)", parent, level, i)
+				return fmt.Errorf("%s: %s not found (/levels/%d)", displayPath(parent), level, i)
 			}
 		}
 	}
 	for _, level := range db.Levels {
 		parent := "levels/" + level.Name
 		if !engineNames[level.Engine] {
-			return fmt.Errorf("%s: %s not found (/engine)", parent, level.Engine)
+			return fmt.Errorf("%s: %s not found (/engine)", displayPath(parent), level.Engine)
 		}
 		if !level.UseSkin.UseDefault && !skinNames[level.UseSkin.Item] {
-			return fmt.Errorf("%s: %s not found (/useSkin/item)", parent, level.UseSkin.Item)
+			return fmt.Errorf("%s: %s not found (/useSkin/item)", displayPath(parent), level.UseSkin.Item)
 		}
 		if !level.UseBackground.UseDefault && !backgroundNames[level.UseBackground.Item] {
-			return fmt.Errorf("%s: %s not found (/useBackground/item)", parent, level.UseBackground.Item)
+			return fmt.Errorf("%s: %s not found (/useBackground/item)", displayPath(parent), level.UseBackground.Item)
 		}
 		if !level.UseEffect.UseDefault && !effectNames[level.UseEffect.Item] {
-			return fmt.Errorf("%s: %s not found (/useEffect/item)", parent, level.UseEffect.Item)
+			return fmt.Errorf("%s: %s not found (/useEffect/item)", displayPath(parent), level.UseEffect.Item)
 		}
 		if !level.UseParticle.UseDefault && !particleNames[level.UseParticle.Item] {
-			return fmt.Errorf("%s: %s not found (/useParticle/item)", parent, level.UseParticle.Item)
+			return fmt.Errorf("%s: %s not found (/useParticle/item)", displayPath(parent), level.UseParticle.Item)
 		}
 	}
 	for _, engine := range db.Engines {
 		parent := "engines/" + engine.Name
 		if !skinNames[engine.Skin] {
-			return fmt.Errorf("%s: %s not found (/skin)", parent, engine.Skin)
+			return fmt.Errorf("%s: %s not found (/skin)", displayPath(parent), engine.Skin)
 		}
 		if !backgroundNames[engine.Background] {
-			return fmt.Errorf("%s: %s not found (/background)", parent, engine.Background)
+			return fmt.Errorf("%s: %s not found (/background)", displayPath(parent), engine.Background)
 		}
 		if !effectNames[engine.Effect] {
-			return fmt.Errorf("%s: %s not found (/effect)", parent, engine.Effect)
+			return fmt.Errorf("%s: %s not found (/effect)", displayPath(parent), engine.Effect)
 		}
 		if !particleNames[engine.Particle] {
-			return fmt.Errorf("%s: %s not found (/particle)", parent, engine.Particle)
+			return fmt.Errorf("%s: %s not found (/particle)", displayPath(parent), engine.Particle)
 		}
 	}
 	for _, replay := range db.Replays {
 		parent := "replays/" + replay.Name
 		if !levelNames[replay.Level] {
-			return fmt.Errorf("%s: %s not found (/level)", parent, replay.Level)
+			return fmt.Errorf("%s: %s not found (/level)", displayPath(parent), replay.Level)
 		}
 	}
 	return nil
@@ -439,4 +439,8 @@ func names[T any](items []T, name func(T) string) map[string]bool {
 		result[name(item)] = true
 	}
 	return result
+}
+
+func displayPath(path string) string {
+	return filepath.ToSlash(path)
 }

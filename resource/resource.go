@@ -48,12 +48,12 @@ func (p Packer) Pack(pathBase, ext string, optional bool) (*core.Srl, bool, erro
 
 	if optional {
 		if p.Logger != nil {
-			p.Logger.Info(fmt.Sprintf("%s[.%s/.srl]: Does not exist, skipped", pathBase, ext))
+			p.Logger.Info(fmt.Sprintf("%s[.%s/.srl]: Does not exist, skipped", displayPath(pathBase), ext))
 		}
 		return nil, false, nil
 	}
 	if p.Logger != nil {
-		p.Logger.Warning(fmt.Sprintf("%s[.%s/.srl]: Does not exist", pathBase, ext))
+		p.Logger.Warning(fmt.Sprintf("%s[.%s/.srl]: Does not exist", displayPath(pathBase), ext))
 	}
 	empty := core.Srl{}
 	return &empty, true, nil
@@ -114,4 +114,8 @@ func readIfExists(path string) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 	return nil, false, err
+}
+
+func displayPath(path string) string {
+	return filepath.ToSlash(path)
 }
